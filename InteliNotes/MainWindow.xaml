@@ -1,0 +1,188 @@
+﻿<Window x:Class="InteliNotes.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:colorpicker="clr-namespace:ColorPicker;assembly=ColorPicker"
+        xmlns:metro="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:local="clr-namespace:InteliNotes"
+        mc:Ignorable="d"
+        WindowState="Maximized" KeyDown="Window_KeyDown"
+        Title="InteliNote" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="80" />
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Background="DarkGray">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition Height="25"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <DockPanel Margin="10,0,0,0" LastChildFill="False">
+
+                    <local:InputButton DockPanel.Dock="Left" Height="35" Width="35" Margin="0,0,10,0" 
+                                       Icon="FileDocumentEdit" IconColor="Black" Click="OpenMediaInNotebook" />
+                    <local:InputButton DockPanel.Dock="Left" Height="35" Width="35" Margin="0,0,10,0" 
+                                       Icon="FilePdfBox" IconColor="#e40b00" Click="SaveNotebookAsPdf"/>
+                </DockPanel>
+            </Grid>
+            <!-- Pierwszy wiersz, tutaj ma byc pasek arkuszy
+                 oraz rozwijane menu typu File, Settings itp. -->
+            <TabControl Grid.Row="1" VerticalAlignment="Bottom" Background="Gray" 
+                                Name="Tabs" TabStripPlacement="Top" 
+                                ItemsSource="{Binding Notebooks, Mode=TwoWay}"
+                                SelectedItem="{Binding DisplayedNotebook, Mode=TwoWay}" Grid.ColumnSpan="2" Margin="0,0,0.334,0">
+                <TabControl.Resources>
+                    <Style TargetType="TabItem">
+                        <Setter Property="BorderBrush" Value="DarkGray"/>
+                        <Setter Property="Background" Value="LightGray"/>
+                        <Setter Property="Height" Value="20"/>
+                    </Style>
+                </TabControl.Resources>
+
+                <TabControl.ItemTemplate>
+                    <DataTemplate>
+                        <DockPanel Width="Auto">
+                            <TextBlock Text="{Binding Name}" DockPanel.Dock="Left"/>
+                            <Button Margin="5,0,0,0" DockPanel.Dock="Right" Click="RemoveTabClick"
+                                            BorderBrush="Transparent" BorderThickness="0">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <ContentPresenter Content="{TemplateBinding Content}">
+                                            <ContentPresenter.ContentTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock TextAlignment="Center" FontSize="15"
+                                                                       VerticalAlignment="Center">🞩</TextBlock>
+                                                </DataTemplate>
+                                            </ContentPresenter.ContentTemplate>
+                                        </ContentPresenter>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </DockPanel>
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+                <TabControl.ContentTemplate>
+                    <DataTemplate/>
+                </TabControl.ContentTemplate>
+            </TabControl>
+
+        </Grid>
+        <Grid Grid.Row="1">
+
+            <!-- Drugi wiersz -->
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="50"/>
+                <!-- wąska kolumna na pionowy toolbar (1) -->
+                <ColumnDefinition/>
+                <!-- kolumna na obszar roboczy czyli InkCanvas (2) -->
+                <ColumnDefinition Width="200"/>
+                <!-- średniej szerokosci kolumna na paletę oraz listę stron (3) -->
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0" Background="DimGray">
+                <!-- (1) -->
+                <DockPanel LastChildFill="False">
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,20,0,0" 
+                                       Icon="PencilOutline" IconColor="Black" Click="SelectPenClick" />
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" 
+                                       Icon="Eraser"  IconColor="Black" Click="SelectEraserClick"/>
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" 
+                                       Icon="EraserVariant"  IconColor="Black" Click="SelectEraserStrokeClick"/>
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" 
+                                       Icon="Selection" IconColor="Black" Click="SelectSelectionClick" />
+                    <local:InputButton DockPanel.Dock="Bottom" Height="40" Width="40" Margin="0,5,0,20" 
+                                       Icon="Plus" IconColor="DimGray" IconBackground="Aquamarine" Click="ButtonAddPage_Click" />
+                    <local:InputButton DockPanel.Dock="Bottom" Height="40" Width="40" Margin="0,5,0,0" 
+                                       Icon="Minus" IconColor="DimGray" IconBackground="#F09F9F" Click="ButtonRemoveLastPage_Click" />
+                    
+                </DockPanel>
+            </Grid>
+
+            <Grid Name="PageGrid" Grid.Column="1" Background="Gray">
+                <!-- (2) -->
+                <ScrollViewer DockPanel.Dock="Top" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible">
+                    <StackPanel Name="ConcretePages" />
+                </ScrollViewer>
+            </Grid>
+
+            <Grid Grid.Column="2" Background="DimGray">
+                <!-- (3) -->
+                <TabControl Background="#a8adb4" VerticalAlignment="Stretch">
+                    <TabItem Header="Default colors">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="150"/>
+                                <RowDefinition Height="60"/>
+                                <RowDefinition Height="100"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Grid Grid.Column="0">
+                                    <StackPanel>
+                                        <local:PaintColorControl Width="40" Height="40" Icon="VectorLineCurve" IconColor="Black" IconBackground="#c3c8cd" Margin="0,5,0,0"  Click="GetDefaultColor_Click" />
+                                        <local:PaintColorControl Width="40" Height="40" Icon="VectorLineCurve"  IconColor="DimGray" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetDefaultColor_Click"  />
+                                        <local:InputButton Width="40" Height="40" Icon="FormatColorHighlight"  IconColor="#fdff00" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetHighlighterColor_Click"  />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Grid.Column="1">
+                                    <StackPanel>
+                                        <local:PaintColorControl Width="40" Height="40" Icon="VectorLineCurve"  IconColor="Red" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetDefaultColor_Click"  />
+                                        <local:PaintColorControl Width="40" Height="40" Icon="VectorLineCurve"  IconColor="#ff822a" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetDefaultColor_Click"  />
+                                        <local:InputButton Width="40" Height="40" Icon="FormatColorHighlight"  IconColor="#00ff04" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetHighlighterColor_Click"  />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Grid.Column="2">
+                                    <StackPanel>
+                                        <local:PaintColorControl Width="40" Height="40" Icon="VectorLineCurve"  IconColor="#0047bd" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetDefaultColor_Click"  />
+                                        <local:PaintColorControl Width="40" Height="40" Icon="VectorLineCurve"  IconColor="#b610bf" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetDefaultColor_Click"  />
+                                        <local:InputButton Width="40" Height="40" Icon="FormatColorHighlight"  IconColor="#00c5ff" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetHighlighterColor_Click"  />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Grid.Column="3">
+                                    <StackPanel>
+                                        <local:PaintColorControl Width="40" Height="40" Icon="VectorLineCurve"  IconColor="#009543" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetDefaultColor_Click"  />
+                                        <local:PaintColorControl Width="40" Height="40" Icon="VectorLineCurve"  IconColor="#07b9fc" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetDefaultColor_Click"  />
+                                        <local:InputButton Width="40" Height="40" Icon="FormatColorHighlight"  IconColor="#ff00a7" IconBackground="#c3c8cd" Margin="0,5,0,0" Click="GetHighlighterColor_Click"  />
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                            <Grid Grid.Row="1">
+                                <DockPanel VerticalAlignment="Center" Margin="5,10,5,10">
+                                    <TextBox Text="{Binding ElementName=slValue, Path=Value, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Center" Width="40" Height="20"/>
+                                    <Slider Maximum="32" TickPlacement="BottomRight" TickFrequency="1" Value="4" Minimum="1" 
+                                            IsSnapToTickEnabled="True" Name="slValue" ValueChanged="slValue_ValueChanged"/>
+                                </DockPanel>
+                            </Grid>
+                            <Grid Grid.Row="2">
+                                <Path Stroke="{Binding PenToBrush}" Margin="0" StrokeThickness="{Binding penSize}">
+                                    <Path.Data>
+                                        <PathGeometry>
+                                            <PathFigure StartPoint="20,50">
+                                                <BezierSegment Point1="80,-25" Point2="110,125" Point3="170,50"></BezierSegment>
+                                            </PathFigure>
+                                        </PathGeometry>
+                                    </Path.Data>
+                                </Path>
+                            </Grid>
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="Color Picker">
+                        <colorpicker:StandardColorPicker VerticalAlignment="Top" FontSize="11" ColorChanged="StandardColorPicker_ColorChanged"/>
+                    </TabItem>
+                </TabControl>
+            </Grid>
+
+        </Grid>
+    </Grid>
+</Window>

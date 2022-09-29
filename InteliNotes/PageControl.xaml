@@ -1,0 +1,17 @@
+﻿<UserControl x:Class="InteliNotes.PageControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:InteliNotes"
+             mc:Ignorable="d" 
+             SizeChanged="UserControl_SizeChanged" 
+             d:DesignHeight="800" d:DesignWidth="567">
+    <Grid>
+        <InkCanvas Margin="10,20,10,5" Name="DrawingCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                   Strokes="{Binding Path=DisplayedStrokes, Mode=TwoWay}" 
+                   DefaultDrawingAttributes="{Binding  DrawingAttributes}"
+                   EditingMode= "{Binding EditingMode}" 
+                   PreviewMouseLeftButtonDown="DrawingCanvas_PreviewMouseLeftButtonDown"/>
+    </Grid>
+</UserControl>
