@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Ink;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
@@ -159,11 +160,11 @@ namespace InteliNotes
         MainViewModel model;
         public MainWindow()
         {
-            InitializeComponent();
+            InitializeComponent(); 
+            //AddHotKeys();
             Style = (Style)FindResource(typeof(Window));
             model = new MainViewModel(this);
             DataContext = model;
-            //AddPage();
         }
 
         public void AddPage(Color color, PenStates state, double size)
@@ -324,7 +325,7 @@ namespace InteliNotes
             }
         }
 
-        private System.Drawing.Image BitmapFromSource(CroppedBitmap bitmapsource)
+        private static System.Drawing.Image BitmapFromSource(CroppedBitmap bitmapsource)
         {
             System.Drawing.Image bitmap;
             using (System.IO.MemoryStream outStream = new System.IO.MemoryStream())
@@ -335,6 +336,30 @@ namespace InteliNotes
                 bitmap = new System.Drawing.Bitmap(outStream);
             }
             return bitmap;
+        }
+
+        public static System.Drawing.Bitmap BitmapSourceToBitmap2(BitmapSource srs)
+        {
+            int width = srs.PixelWidth;
+            int height = srs.PixelHeight;
+            int stride = width * ((srs.Format.BitsPerPixel + 7) / 8);
+            IntPtr ptr = IntPtr.Zero;
+            try
+            {
+                ptr = System.Runtime.InteropServices.Marshal.AllocHGlobal(height * stride);
+                srs.CopyPixels(new Int32Rect(0, 0, width, height), ptr, height * stride, stride);
+                using (var btm = new System.Drawing.Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format1bppIndexed, ptr))
+                {
+                    // Clone the bitmap so that we can dispose it and
+                    // release the unmanaged memory at ptr
+                    return new System.Drawing.Bitmap(btm);
+                }
+            }
+            finally
+            {
+                if (ptr != IntPtr.Zero)
+                    System.Runtime.InteropServices.Marshal.FreeHGlobal(ptr);
+            }
         }
 
         private void GetDefaultColor_Click(object sender, RoutedEventArgs args)
@@ -416,7 +441,7 @@ namespace InteliNotes
             Image image = new Image();
             image.Source = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
 
-            if(startPoint)
+            if (startPoint)
             {
                 model.DisplayedNotebook.pages[0].DrawingCanvas.Children.Add(image);
             }
@@ -454,13 +479,103 @@ namespace InteliNotes
             return destImage;
         }
 
-        private void Window_KeyDown(object sender, KeyEventArgs e)
+        #region Key Actions
+        //private void AddHotKeys()
+        //{
+        //    try
+        //    {
+        //        RoutedCommand firstSettings = new RoutedCommand();
+        //        firstSettings.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control));
+        //        CommandBindings.Add(new CommandBinding(firstSettings, PasteImage));
+
+        //        //RoutedCommand secondSettings = new RoutedCommand();
+        //        //secondSettings.InputGestures.Add(new KeyGesture(Key.B, ModifierKeys.Alt));
+        //        //CommandBindings.Add(new CommandBinding(secondSettings, My_second_event_handler));
+        //    }
+        //    catch
+        //    {
+        //        //handle exception error
+        //    }
+        //}
+
+        private CustomClipboard clipboard;
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if(e.Key == Key.Q)
+            if(Keyboard.IsKeyDown(Key.LeftCtrl))
             {
-                AddImageFromClipboard();
+                switch(e.Key)
+                {
+                    case Key.V:
+                        
+                        if(clipboard != null)
+                        {
+                            clipboard.Paste(model.DisplayedNotebook.lastClickedPage, model.DisplayedNotebook.lastClickedPt);
+                            e.Handled = true;
+                        }
+                        else if (Clipboard.ContainsImage())
+                        {
+                            AddImageFromClipboard();
+                            e.Handled = true;
+                        }
+                        break;
+                    case Key.X:
+                        CopyOrCut(true);
+                        e.Handled = true;
+                        break;
+                    case Key.C:
+                        CopyOrCut(false);
+                        e.Handled = true;
+                        break;
+                }
             }
         }
+
+        private void CopyOrCut(bool cut)
+        {
+            InkCanvas page = model.DisplayedNotebook.lastClickedPage;
+            var selectedElements = page.GetSelectedElements();
+            var selectedStrokes = page.GetSelectedStrokes().Clone();
+            int imgCnt = selectedElements.Where(n => n is System.Windows.Controls.Image).ToList().Count;
+            int strCnt = selectedStrokes.Count;
+            if (imgCnt == 1 && strCnt == 0)
+            {
+                Image image = selectedElements[0] as Image;
+                Clipboard.Clear();
+                Clipboard.SetDataObject(image);
+                if(cut)
+                {
+                    page.Children.Remove(image);
+                }
+                clipboard = null;
+            }
+            else
+            {
+                InkCanvas canvas = model.DisplayedNotebook.lastClickedPage;
+                Rect selectionR = canvas.GetSelectionBounds();
+                var stroks = canvas.GetSelectedStrokes();
+                var imgs = canvas.GetSelectedElements();
+                Dictionary<UIElement, Point> im = new Dictionary<UIElement, Point>();
+                foreach (var image in imgs)
+                {
+                    im[image] = new Point() { X = InkCanvas.GetLeft(image), Y = InkCanvas.GetTop(image) };
+                }
+                clipboard = new CustomClipboard(selectionR, stroks, im);
+                if (cut)
+                {
+                    for(int i = 0; i < imgs.Count; ++i)
+                    {
+                        Image image = imgs[i] as Image;
+                        canvas.Children.Remove(image);
+                    }
+                    canvas.Strokes.Remove(stroks);
+                }
+
+            }
+        }
+
+
+        #endregion
+
     }
 
     public class Notebook: INotifyPropertyChanged

@@ -96,6 +96,55 @@ namespace InteliNotes
             notebook.lastClickedPt = e.GetPosition(this.DrawingCanvas);
             notebook.lastClickedPage = this.DrawingCanvas;
         }
+
+        private void DrawingCanvas_SelectionChanged(object sender, EventArgs e)
+        {
+        }
+
+        private void DrawingCanvas_SelectionMoving(object sender, InkCanvasSelectionEditingEventArgs e)
+        {
+            Rect rect = e.NewRectangle;
+            Rect prevRect = e.OldRectangle;
+            var strokes = this.DrawingCanvas.GetSelectedStrokes();
+            var elems = this.DrawingCanvas.GetSelectedElements();
+            if(this != notebook.pages.First() && rect.Top < -1*rect.Height/2)
+            {
+                Dictionary<UIElement, Point> im = new Dictionary<UIElement, Point>();
+                for (int i = 0; i < elems.Count; ++i)
+                {
+                    UIElement image = elems[i];
+                    im[image] = new Point() { X = InkCanvas.GetLeft(image), Y = InkCanvas.GetTop(image) };
+                    this.DrawingCanvas.Children.Remove(image);
+                }
+                CustomClipboard clip = new CustomClipboard(prevRect, strokes, im);
+                this.DrawingCanvas.Strokes.Remove(strokes);
+                this.DrawingCanvas.Select(null, null);
+                InkCanvas upper = notebook.pages[notebook.pages.IndexOf(this) - 1].DrawingCanvas;
+                clip.Paste(upper, new Point() { X = rect.X, Y = upper.ActualHeight - prevRect.Height - 30 });
+            }
+            else if(this != notebook.pages.Last() && rect.Bottom + this.DrawingCanvas.Margin.Top > this.ActualHeight + rect.Height/2)
+            {
+                Dictionary<UIElement, Point> im = new Dictionary<UIElement, Point>();
+                for(int i = 0; i < elems.Count; ++i)
+                {
+                    UIElement image = elems[i];
+                    im[image] = new Point() { X = InkCanvas.GetLeft(image), Y = InkCanvas.GetTop(image) };
+                    this.DrawingCanvas.Children.Remove(image);
+                }
+                CustomClipboard clip = new CustomClipboard(prevRect, strokes, im);
+                this.DrawingCanvas.Strokes.Remove(strokes);
+                this.DrawingCanvas.Select(null, null);
+                InkCanvas upper = notebook.pages[notebook.pages.IndexOf(this) + 1].DrawingCanvas;
+                clip.Paste(upper, new Point() { X = rect.X, Y = 30 });
+            }
+        }
+
+        private void MoveStrokes(StrokeCollection strokes, double x, double y)
+        {
+            Matrix mat = new Matrix();
+            mat.Translate(x, y);
+            strokes.Transform(mat, false);
+        }
     }
 
     public class PageViewModel: INotifyPropertyChanged

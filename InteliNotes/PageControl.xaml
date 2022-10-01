@@ -8,10 +8,12 @@
              SizeChanged="UserControl_SizeChanged" 
              d:DesignHeight="800" d:DesignWidth="567">
     <Grid>
-        <InkCanvas Margin="10,20,10,5" Name="DrawingCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <InkCanvas Margin="10,20,10,0" Name="DrawingCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                    Strokes="{Binding Path=DisplayedStrokes, Mode=TwoWay}" 
                    DefaultDrawingAttributes="{Binding  DrawingAttributes}"
                    EditingMode= "{Binding EditingMode}" 
+                   SelectionMoving="DrawingCanvas_SelectionMoving"
+                   SelectionChanged="DrawingCanvas_SelectionChanged"
                    PreviewMouseLeftButtonDown="DrawingCanvas_PreviewMouseLeftButtonDown"/>
     </Grid>
 </UserControl>

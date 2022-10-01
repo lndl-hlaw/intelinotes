@@ -111,9 +111,11 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="CustomClipboard.cs" />
     <Compile Include="InputButton.xaml.cs">
       <DependentUpon>InputButton.xaml</DependentUpon>
     </Compile>
+    <Compile Include="KeyCommand.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

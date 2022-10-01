@@ -7,7 +7,7 @@
         xmlns:metro="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:local="clr-namespace:InteliNotes"
         mc:Ignorable="d"
-        WindowState="Maximized" KeyDown="Window_KeyDown"
+        WindowState="Maximized" PreviewKeyDown="Window_PreviewKeyDown"
         Title="InteliNote" Height="450" Width="800">
     <Grid>
         <Grid.RowDefinitions>
@@ -164,7 +164,7 @@
                                             IsSnapToTickEnabled="True" Name="slValue" ValueChanged="slValue_ValueChanged"/>
                                 </DockPanel>
                             </Grid>
-                            <Grid Grid.Row="2">
+                            <Grid Grid.Row="2" >
                                 <Path Stroke="{Binding PenToBrush}" Margin="0" StrokeThickness="{Binding penSize}">
                                     <Path.Data>
                                         <PathGeometry>
