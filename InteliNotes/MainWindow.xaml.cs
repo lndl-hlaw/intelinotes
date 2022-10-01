@@ -30,150 +30,25 @@ namespace InteliNotes
     /// Logika interakcji dla klasy MainWindow.xaml
     /// </summary>
     /// 
-    public enum PenStates
-    {
-        Pencil,
-        EraserPoint,
-        EraserStroke,
-        Selection
-    }
-        
-    public class MainViewModel: INotifyPropertyChanged
-    {
-
-        private Notebook _dispNotebook;
-        public Notebook DisplayedNotebook
-        {
-            get { return _dispNotebook; }
-            set
-            {
-                _dispNotebook = value;
-                RecomposePages();
-                OnPropertyChanged("DisplayedNotebook");
-            }
-        }
-
-        private ColorPicker.Models.NotifyableColor _pickCol;
-        public ColorPicker.Models.NotifyableColor PickerColor
-        {
-            get { return _pickCol; }
-            set
-            {
-                _pickCol = value;
-                _penColor = Color.FromArgb((byte)value.A, (byte)value.RGB_R,
-              (byte)value.RGB_G, (byte)value.RGB_B);
-                OnPropertyChanged("PickerColor");
-            }
-        }
-
-        private Color _penColor = Color.FromArgb(255, 0, 0, 0);
-        public System.Windows.Media.Color PenColor
-        {
-            get {
-                return _penColor;
-            }
-            set
-            {
-                _penColor = value;
-                PenToBrush = new SolidColorBrush(value);
-                OnPropertyChanged("PenColor");
-            }
-        }
-
-        private Brush _penBr = new SolidColorBrush(Color.FromArgb(255,0,0,0));
-        public Brush PenToBrush
-        {
-            get { return _penBr; }
-            set
-            {
-                _penBr = value;
-                OnPropertyChanged("PenToBrush");
-            }
-        }
-
-        public PenStates currentState = PenStates.Pencil;
-
-        private double _penSize = 2;
-        public double penSize
-        {
-            get { return _penSize; }
-            set
-            {
-                _penSize = value;
-                OnPropertyChanged("penSize");
-            }
-        }
-
-        private MainWindow window;
-        public MainViewModel(MainWindow window)
-        {
-            this.window = window;
-            DisplayedNotebook = new Notebook("Notes Pierwszy");
-            Notebooks = new ObservableCollection<Notebook>();
-            Notebooks.Add(DisplayedNotebook);
-            //window.AddPage();
-            Notebooks.Add(new Notebook("Notes Drugi"));
-            currentState = PenStates.Pencil;
-        }
-
-        private ObservableCollection<Notebook> nots;
-        public ObservableCollection<Notebook> Notebooks
-        {
-            get { return nots; }
-            set
-            {
-                nots = value;
-                OnPropertyChanged("Notebooks");
-            }
-        }
-
-        public void RemovePage(int index)
-        {
-            if(DisplayedNotebook.pages != null && index > -1 && index < DisplayedNotebook.pages.Count)
-            {
-                DisplayedNotebook.pages.RemoveAt(index);
-                RecomposePages();
-            }
-        }
-
-        private void RecomposePages()
-        {
-            window.ConcretePages.Children.RemoveRange(0, window.ConcretePages.Children.Count);
-            foreach(var page in DisplayedNotebook.pages)
-            {
-                window.ConcretePages.Children.Add(page);
-            }
-        }
-
-        #region Property Changed
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
-        }
-        #endregion
-
-    }
+    
     public partial class MainWindow : Window
     {
         MainViewModel model;
         public MainWindow()
         {
-            InitializeComponent(); 
-            //AddHotKeys();
+            InitializeComponent();
             Style = (Style)FindResource(typeof(Window));
             model = new MainViewModel(this);
             DataContext = model;
         }
 
-        public void AddPage(Color color, PenStates state, double size)
+        public void AddPage()
         {
-            ConcretePages.Children.Add(model.DisplayedNotebook.AddPage(color, state, size));
+            ConcretePages.Children.Add(model.DisplayedNotebook.AddPage());
         }
         private void ButtonAddPage_Click(object sender, RoutedEventArgs e)
         {
-            AddPage(model.PenColor, model.currentState, model.penSize);
+            AddPage();
         }
 
         private void ButtonRemoveLastPage_Click(object sender, RoutedEventArgs e)
@@ -206,43 +81,74 @@ namespace InteliNotes
         private void StandardColorPicker_ColorChanged(object sender, RoutedEventArgs e)
         {
             ColorPicker.StandardColorPicker picker = sender as ColorPicker.StandardColorPicker;
-            model.PickerColor = picker.Color;
             Color color = Color.FromArgb((byte)picker.Color.A, (byte)picker.Color.RGB_R,
                 (byte)picker.Color.RGB_G, (byte)picker.Color.RGB_B);
+            if(model.isHighlighter)
+            {
+                color.A = 130;
+            }
             model.PenColor = color;
-            model.DisplayedNotebook.ChangeColor(color);
+            model.DrawingAttributes.Color = color;
         }
 
         private void SelectPenClick(object sender, RoutedEventArgs args)
         {
-            model.currentState = PenStates.Pencil;
-            model.DisplayedNotebook.ChangeState(PenStates.Pencil);
-            model.DisplayedNotebook.ChangeHighlighter(false);
+            model.isHighlighter = false;
+            model.DrawingAttributes.Width = model.penSize;
+            model.DrawingAttributes.Height = model.penSize;
+            model.EditingMode = InkCanvasEditingMode.Ink;
         }
         private void SelectEraserClick(object sender, RoutedEventArgs args)
         {
-            model.currentState = PenStates.EraserPoint;
-            model.DisplayedNotebook.ChangeState(PenStates.EraserPoint);
-            model.DisplayedNotebook.ChangeHighlighter(false);
+            model.EditingMode = InkCanvasEditingMode.EraseByPoint;
         }
         private void SelectEraserStrokeClick(object sender, RoutedEventArgs args)
         {
-            model.currentState = PenStates.EraserStroke;
-            model.DisplayedNotebook.ChangeState(PenStates.EraserStroke);
-            model.DisplayedNotebook.ChangeHighlighter(false);
+            model.EditingMode = InkCanvasEditingMode.EraseByStroke;
         }
         private void SelectSelectionClick(object sender, RoutedEventArgs args)
         {
-            model.currentState = PenStates.Selection;
-            model.DisplayedNotebook.ChangeState(PenStates.Selection);
-            model.DisplayedNotebook.ChangeHighlighter(false);
+            model.EditingMode = InkCanvasEditingMode.Select;
         }
+
+        private void GetDefaultColor_Click(object sender, RoutedEventArgs args)
+        {
+            Color color = ((SolidColorBrush)(sender as PaintColorControl).IconColor).Color;
+            model.isHighlighter = false;
+            model.DrawingAttributes.Width = model.penSize;
+            model.DrawingAttributes.Height = model.penSize;
+            model.PenColor = color;
+            model.DrawingAttributes.Color = color;
+        }
+
+        private void GetHighlighterColor_Click(object sender, RoutedEventArgs args)
+        {
+            Color color = ((SolidColorBrush)(sender as InputButton).IconColor).Color;
+            color.A = 130;
+            model.isHighlighter = true;
+            model.PenColor = color;
+            model.DrawingAttributes.Color = color;
+            model.DrawingAttributes.Width = 4;
+            model.DrawingAttributes.Height = 10;
+        }
+
+        private void slValue_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (model != null && model.isHighlighter == false)
+            {
+                double size = Math.Sqrt(e.NewValue);
+                model.penSize = size;
+                model.DrawingAttributes.Width = size;
+                model.DrawingAttributes.Height = size;
+            }
+        }
+
 
         private void OpenMediaInNotebook(object sender, RoutedEventArgs args)
         {
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.Filter = "All Files (*.*)|*.*|Image Files|*.jpg;*.jpeg;*.png;*.gif;*.tif;...|Pdf files|*.pdf";
-            if(dialog.ShowDialog() == true)
+            if (dialog.ShowDialog() == true)
             {
                 string file = dialog.FileName;
                 if (file.EndsWith(".pdf"))
@@ -254,7 +160,7 @@ namespace InteliNotes
                     for (; index >= 0; --index)
                     {
                         var page = model.DisplayedNotebook.pages[index];
-                        if (page.model.DisplayedStrokes.Count != 0 || 
+                        if (page.DisplayedStrokes.Count != 0 ||
                             page.DrawingCanvas.Children.OfType<Image>().ToList().Count > 0)
                         {
                             break;
@@ -263,9 +169,9 @@ namespace InteliNotes
                     int pagesToAdd = pagesCnt - (model.DisplayedNotebook.pages.Count - index - 1);
                     for (int i = 0; i < pagesToAdd; ++i)
                     {
-                        AddPage(model.PenColor, model.currentState, model.penSize);
+                        AddPage();
                     }
-                    for(int i = index + 1, j = 0; i < model.DisplayedNotebook.pages.Count; ++i, ++j)
+                    for (int i = index + 1, j = 0; i < model.DisplayedNotebook.pages.Count; ++i, ++j)
                     {
                         Image image = new Image();
                         image.Source = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(pageImages[j].GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
@@ -325,70 +231,6 @@ namespace InteliNotes
             }
         }
 
-        private static System.Drawing.Image BitmapFromSource(CroppedBitmap bitmapsource)
-        {
-            System.Drawing.Image bitmap;
-            using (System.IO.MemoryStream outStream = new System.IO.MemoryStream())
-            {
-                BitmapEncoder enc = new BmpBitmapEncoder();
-                enc.Frames.Add(BitmapFrame.Create(bitmapsource));
-                enc.Save(outStream);
-                bitmap = new System.Drawing.Bitmap(outStream);
-            }
-            return bitmap;
-        }
-
-        public static System.Drawing.Bitmap BitmapSourceToBitmap2(BitmapSource srs)
-        {
-            int width = srs.PixelWidth;
-            int height = srs.PixelHeight;
-            int stride = width * ((srs.Format.BitsPerPixel + 7) / 8);
-            IntPtr ptr = IntPtr.Zero;
-            try
-            {
-                ptr = System.Runtime.InteropServices.Marshal.AllocHGlobal(height * stride);
-                srs.CopyPixels(new Int32Rect(0, 0, width, height), ptr, height * stride, stride);
-                using (var btm = new System.Drawing.Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format1bppIndexed, ptr))
-                {
-                    // Clone the bitmap so that we can dispose it and
-                    // release the unmanaged memory at ptr
-                    return new System.Drawing.Bitmap(btm);
-                }
-            }
-            finally
-            {
-                if (ptr != IntPtr.Zero)
-                    System.Runtime.InteropServices.Marshal.FreeHGlobal(ptr);
-            }
-        }
-
-        private void GetDefaultColor_Click(object sender, RoutedEventArgs args)
-        {
-            Color color = ((SolidColorBrush)(sender as PaintColorControl).IconColor).Color;
-            model.DisplayedNotebook.ChangeState(PenStates.Pencil);
-            model.DisplayedNotebook.ChangeHighlighter(false);
-            model.PenColor = color;
-            model.DisplayedNotebook.ChangeColor(color);
-        }
-
-        private void GetHighlighterColor_Click(object sender, RoutedEventArgs args)
-        {
-            Color color = ((SolidColorBrush)(sender as InputButton).IconColor).Color;
-            color.A = 130;
-            model.DisplayedNotebook.ChangeHighlighter(true);
-            model.DisplayedNotebook.ChangeState(PenStates.Pencil);
-            model.PenColor = color;
-            model.DisplayedNotebook.ChangeColor(color);
-        }
-
-        private void slValue_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (model != null)
-            {
-                model.penSize = Math.Sqrt(e.NewValue);
-                model.DisplayedNotebook.ChangeSize(model.penSize);
-            }
-        }
 
         public void AddImageFromClipboard()
         {
@@ -480,23 +322,6 @@ namespace InteliNotes
         }
 
         #region Key Actions
-        //private void AddHotKeys()
-        //{
-        //    try
-        //    {
-        //        RoutedCommand firstSettings = new RoutedCommand();
-        //        firstSettings.InputGestures.Add(new KeyGesture(Key.V, ModifierKeys.Control));
-        //        CommandBindings.Add(new CommandBinding(firstSettings, PasteImage));
-
-        //        //RoutedCommand secondSettings = new RoutedCommand();
-        //        //secondSettings.InputGestures.Add(new KeyGesture(Key.B, ModifierKeys.Alt));
-        //        //CommandBindings.Add(new CommandBinding(secondSettings, My_second_event_handler));
-        //    }
-        //    catch
-        //    {
-        //        //handle exception error
-        //    }
-        //}
 
         private CustomClipboard clipboard;
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -572,13 +397,10 @@ namespace InteliNotes
 
             }
         }
-
-
         #endregion
-
     }
 
-    public class Notebook: INotifyPropertyChanged
+    public class Notebook : INotifyPropertyChanged
     {
 
         #region Last Clicked Canvas
@@ -594,18 +416,6 @@ namespace InteliNotes
             {
                 _pages = value;
                 OnPropertyChanged("pages");
-                PagesCount = _pages.Count;
-            }
-        }
-
-        private int cnt = 0;
-        public int PagesCount
-        {
-            get { return cnt; }
-            set
-            {
-                cnt = value;
-                OnPropertyChanged("PagesCount");
             }
         }
 
@@ -631,44 +441,12 @@ namespace InteliNotes
 
         }
 
-        public PageControl AddPage(Color color, PenStates state, double size)
+        public PageControl AddPage()
         {
-            PageControl page = new PageControl(this,color, state, size);
+            PageControl page = new PageControl(this);
             page.RequestBringIntoView += (s, e) => { e.Handled = true; };
             pages.Add(page);
             return page;
-        }
-
-        public void ChangeColor(Color color)
-        {
-            foreach(var page in pages)
-            {
-                page.ChangeColor(color);
-            }
-        }
-
-        public void ChangeState(PenStates state)
-        {
-            foreach (var page in pages)
-            {
-                page.ChangeState(state);
-            }
-        }
-
-        public void ChangeSize(double size)
-        {
-            foreach (var page in pages)
-            {
-                page.ChangeSize(size);
-            }
-        }
-
-        public void ChangeHighlighter(bool value)
-        {
-            foreach (var page in pages)
-            {
-                page.ChangeHighlighter(value);
-            }
         }
 
         #region Property Changed
@@ -680,46 +458,4 @@ namespace InteliNotes
         }
         #endregion
     }
-
-    public class ModelCommand : ICommand
-    {
-        #region Constructors
-
-        public ModelCommand(Action<object> execute)
-            : this(execute, null) { }
-
-        public ModelCommand(Action<object> execute, Predicate<object> canExecute)
-        {
-            _execute = execute;
-            _canExecute = canExecute;
-        }
-
-        #endregion
-
-        #region ICommand Members
-
-        public event EventHandler CanExecuteChanged;
-
-        public bool CanExecute(object parameter)
-        {
-            return _canExecute != null ? _canExecute(parameter) : true;
-        }
-
-        public void Execute(object parameter)
-        {
-            if (_execute != null)
-                _execute(parameter);
-        }
-
-        public void OnCanExecuteChanged()
-        {
-            CanExecuteChanged(this, EventArgs.Empty);
-        }
-
-        #endregion
-
-        private readonly Action<object> _execute = null;
-        private readonly Predicate<object> _canExecute = null;
-    }
-
 }

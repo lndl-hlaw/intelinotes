@@ -4,12 +4,12 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:InteliNotes"
-             mc:Ignorable="d" 
+             mc:Ignorable="d" Name="inkPage"
              SizeChanged="UserControl_SizeChanged" 
              d:DesignHeight="800" d:DesignWidth="567">
     <Grid>
         <InkCanvas Margin="10,20,10,0" Name="DrawingCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                   Strokes="{Binding Path=DisplayedStrokes, Mode=TwoWay}" 
+                   Strokes="{Binding ElementName=inkPage, Path=DisplayedStrokes, Mode=TwoWay}" 
                    DefaultDrawingAttributes="{Binding  DrawingAttributes}"
                    EditingMode= "{Binding EditingMode}" 
                    SelectionMoving="DrawingCanvas_SelectionMoving"
