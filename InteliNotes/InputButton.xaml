@@ -13,6 +13,9 @@
                 <metro:PackIconMaterial VerticalAlignment="Center" HorizontalAlignment="Center" Height="22" Width="22"
                                         Kind="{Binding ElementName=inputButton, Path=Icon}" Foreground="{Binding ElementName=inputButton, Path=IconColor}"/>
             </Button.Content>
+            <!--<Button.ToolTip>
+                <ToolTip Content="{Binding ElementName=inputButton, Path=ToolTipText}"/>
+            </Button.ToolTip>-->
             <Button.Resources>
                 <Style TargetType="{x:Type Border}">
                     <Setter Property="CornerRadius" Value="5"/>

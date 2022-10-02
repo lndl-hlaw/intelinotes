@@ -16,38 +16,51 @@ namespace InteliNotes
     {
         Rect windowRect;
         StrokeCollection strokes;
-        Dictionary<UIElement, Point> images;
-        public CustomClipboard(Rect selectedRect, StrokeCollection strokes, Dictionary<UIElement, Point> images)
+        StrokeCollection pasteStrokes;
+        List<(UIElement, Point)> images;
+        List<(UIElement, Point)> newImages;
+        public CustomClipboard(Rect selectedRect, StrokeCollection strokes, List<(UIElement, Point)> images)
         {
             this.images = images;
-            this.strokes = strokes.Clone();
+            this.strokes = strokes;
             windowRect = selectedRect;
         }
 
         public void Paste(InkCanvas canvas, Point position)
         {
-            strokes = strokes.Clone();
+            pasteStrokes = strokes.Clone();
             //canvas.Strokes.Add(CopyAndMoveStrokes(strokes, position.X - windowRect.Left, position.Y - windowRect.Top));
-            canvas.Strokes.Add(strokes);
-            MoveStrokes(strokes, position.X - windowRect.Left, position.Y - windowRect.Top);
+            canvas.Strokes.Add(pasteStrokes);
+            pasteStrokes.Move(position.X - windowRect.Left, position.Y - windowRect.Top);
             List<UIElement> newElems = new List<UIElement>();
+            newImages = new List<(UIElement, Point)>();
             foreach(var img in images)
             {
                 Image pic = new Image();
-                pic.Source = (img.Key as Image).Source.Clone();
+                pic.Source = (img.Item1 as Image).Source.Clone();
                 newElems.Add(pic);
-                canvas.Children.Add(pic);
-                InkCanvas.SetTop(pic, position.Y + img.Value.Y - windowRect.Top);
-                InkCanvas.SetLeft(pic, position.X + img.Value.X - windowRect.Left);
+                //canvas.Children.Add(pic);
+                //InkCanvas.SetTop(pic, position.Y + img.Value.Y - windowRect.Top);
+                //InkCanvas.SetLeft(pic, position.X + img.Value.X - windowRect.Left);
+                Point pt = new Point()
+                {
+                    X = position.X + img.Item2.X - windowRect.Left,
+                    Y = position.Y + img.Item2.Y - windowRect.Top
+                };
+                canvas.AddUIElementAtPosition(pic, pt);
+                newImages.Add((pic, pt));
             }
-            canvas.Select(strokes, newElems);
+            canvas.Select(pasteStrokes, newElems);
         }
 
-        private void MoveStrokes(StrokeCollection strokes, double x, double y)
+        public StrokeCollection GetStrokes()
         {
-            Matrix mat = new Matrix();
-            mat.Translate(x, y);
-            strokes.Transform(mat, false);
+            return pasteStrokes == null ? strokes : pasteStrokes;
+        }
+
+        public List<(UIElement, Point)> GetElements()
+        {
+            return newImages == null ? images : newImages;
         }
 
         private static StrokeCollection CopyAndMoveStrokes(StrokeCollection strokes, double x, double y)

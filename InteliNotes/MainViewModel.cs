@@ -112,21 +112,21 @@ namespace InteliNotes
             set
             {
                 _penColor = value;
-                //PenToBrush = new SolidColorBrush(value);
+                PenToBrush = new SolidColorBrush(value);
                 OnPropertyChanged("PenColor");
             }
         }
 
-        //private Brush _penBr = new SolidColorBrush(Color.FromArgb(255, 0, 0, 0));
-        //public Brush PenToBrush
-        //{
-        //    get { return _penBr; }
-        //    set
-        //    {
-        //        _penBr = value;
-        //        OnPropertyChanged("PenToBrush");
-        //    }
-        //}
+        private Brush _penBr = new SolidColorBrush(Color.FromArgb(255, 0, 0, 0));
+        public Brush PenToBrush
+        {
+            get { return _penBr; }
+            set
+            {
+                _penBr = value;
+                OnPropertyChanged("PenToBrush");
+            }
+        }
 
         private double _penSize = 2;
         public double penSize
@@ -153,7 +153,6 @@ namespace InteliNotes
             DisplayedNotebook = new Notebook("Notes Pierwszy");
             Notebooks = new ObservableCollection<Notebook>();
             Notebooks.Add(DisplayedNotebook);
-            //window.AddPage();
             Notebooks.Add(new Notebook("Notes Drugi"));
         }
 

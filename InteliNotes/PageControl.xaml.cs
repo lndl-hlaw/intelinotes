@@ -44,14 +44,11 @@ namespace InteliNotes
             Loaded += (s, e) =>
             {
                 this.Height = 1.41428 * this.ActualWidth;
+                this.MinHeight = this.MaxHeight = this.ActualHeight;
+                this.MinWidth = this.MaxWidth = this.ActualWidth;
             };
         }
 
-        public PageControl(Notebook nt, int w, int h): this(nt)
-        {
-            Width = w;
-            Height = h;
-        }
         #endregion
 
         #region Control Actions
@@ -62,49 +59,63 @@ namespace InteliNotes
         private void DrawingCanvas_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             notebook.lastClickedPt = e.GetPosition(this.DrawingCanvas);
-            notebook.lastClickedPage = this.DrawingCanvas;
+            notebook.lastClickedPage = this;
         }
 
         private void DrawingCanvas_SelectionChanged(object sender, EventArgs e)
         {
+
         }
 
         private void DrawingCanvas_SelectionMoving(object sender, InkCanvasSelectionEditingEventArgs e)
         {
             Rect rect = e.NewRectangle;
             Rect prevRect = e.OldRectangle;
+            Point prevPt = new Point() { X = prevRect.X, Y = prevRect.Y };
             var strokes = this.DrawingCanvas.GetSelectedStrokes();
             var elems = this.DrawingCanvas.GetSelectedElements();
             if(this != notebook.pages.First() && rect.Top < -1*rect.Height/2)
             {
-                Dictionary<UIElement, Point> im = new Dictionary<UIElement, Point>();
+                List<(UIElement, Point)> im = new List<(UIElement, Point)>();
                 for (int i = 0; i < elems.Count; ++i)
                 {
                     UIElement image = elems[i];
-                    im[image] = new Point() { X = InkCanvas.GetLeft(image), Y = InkCanvas.GetTop(image) };
-                    this.DrawingCanvas.Children.Remove(image);
+                    im.Add((image, new Point() { X = InkCanvas.GetLeft(image), Y = InkCanvas.GetTop(image) }));
                 }
                 CustomClipboard clip = new CustomClipboard(prevRect, strokes, im);
-                this.DrawingCanvas.Strokes.Remove(strokes);
-                this.DrawingCanvas.Select(null, null);
+                this.DrawingCanvas.RemoveSelection();
                 InkCanvas upper = notebook.pages[notebook.pages.IndexOf(this) - 1].DrawingCanvas;
-                clip.Paste(upper, new Point() { X = rect.X, Y = Math.Min(upper.ActualHeight - prevRect.Height - 30, 
-                    upper.ActualHeight + rect.Top - this.DrawingCanvas.Margin.Top) });
+                Point nextPt = new Point()
+                {
+                    X = rect.X,
+                    Y = Math.Min(upper.ActualHeight - prevRect.Height - 30,
+                    upper.ActualHeight + rect.Top - this.DrawingCanvas.Margin.Top)
+                };
+
+                clip.Paste(upper, nextPt);
+
+                notebook.monitor.AddLastAction(new MoveStrokesAndControlsAction(this.DrawingCanvas, upper, prevPt, nextPt, strokes, elems.ToList()));
             }
             else if(this != notebook.pages.Last() && rect.Bottom > this.DrawingCanvas.ActualHeight + rect.Height/2)
             {
-                Dictionary<UIElement, Point> im = new Dictionary<UIElement, Point>();
-                for(int i = 0; i < elems.Count; ++i)
+                List<(UIElement, Point)> im = new List<(UIElement, Point)>();
+                for (int i = 0; i < elems.Count; ++i)
                 {
                     UIElement image = elems[i];
-                    im[image] = new Point() { X = InkCanvas.GetLeft(image), Y = InkCanvas.GetTop(image) };
-                    this.DrawingCanvas.Children.Remove(image);
+                    im.Add((image, new Point() { X = InkCanvas.GetLeft(image), Y = InkCanvas.GetTop(image) }));
                 }
                 CustomClipboard clip = new CustomClipboard(prevRect, strokes, im);
-                this.DrawingCanvas.Strokes.Remove(strokes);
-                this.DrawingCanvas.Select(null, null);
-                InkCanvas upper = notebook.pages[notebook.pages.IndexOf(this) + 1].DrawingCanvas;
-                clip.Paste(upper, new Point() { X = rect.X, Y = Math.Max(30, rect.Top - this.DrawingCanvas.ActualHeight) });
+                Point nextPt = new Point() { X = rect.X, Y = Math.Max(30, rect.Top - this.DrawingCanvas.ActualHeight) };
+                this.DrawingCanvas.RemoveSelection();
+                InkCanvas downer = notebook.pages[notebook.pages.IndexOf(this) + 1].DrawingCanvas;
+                clip.Paste(downer, nextPt);
+
+                notebook.monitor.AddLastAction(new MoveStrokesAndControlsAction(this.DrawingCanvas, downer, prevPt, nextPt, strokes, elems.ToList()));
+            }
+            else
+            {
+                Point nextPt = new Point() { X = rect.X, Y = rect.Y };
+                notebook.monitor.AddLastAction(new MoveStrokesAndControlsAction(this.DrawingCanvas, this.DrawingCanvas, prevPt, nextPt, strokes, elems.ToList()));
             }
         }
         #endregion
@@ -117,5 +128,10 @@ namespace InteliNotes
             if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
         }
         #endregion
+
+        private void DrawingCanvas_StrokeCollected(object sender, InkCanvasStrokeCollectedEventArgs e)
+        {
+            notebook.monitor.AddLastAction(new AddStrokeAction(DrawingCanvas, e.Stroke));
+        }
     }
 }

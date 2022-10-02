@@ -11,27 +11,41 @@
         Title="InteliNote" Height="450" Width="800">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="80" />
+            <RowDefinition Height="90" />
             <RowDefinition/>
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Background="DarkGray">
             <Grid.RowDefinitions>
+                <RowDefinition Height="20"/>
                 <RowDefinition/>
                 <RowDefinition Height="25"/>
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0">
+            <DockPanel Grid.Row="0">
+                <Menu DockPanel.Dock="Top">
+                    <MenuItem Header="_File">
+                        <MenuItem Header="_New" />
+                        <MenuItem Header="_Open" Click="MenuItemOpen_Click" />
+                        <MenuItem Header="_Save" Click="MenuItemSave_Click"/>
+                        <Separator />
+                        <MenuItem Header="_Exit" />
+                    </MenuItem>
+                </Menu>
+                <TextBox AcceptsReturn="True" />
+            </DockPanel>
+            <Grid Grid.Row="1">
                 <DockPanel Margin="10,0,0,0" LastChildFill="False">
-
-                    <local:InputButton DockPanel.Dock="Left" Height="35" Width="35" Margin="0,0,10,0" 
+                    <local:InputButton DockPanel.Dock="Left" Height="35" Width="35" Margin="0,0,10,0"  ToolTip="Otwórz notes"
+                                       Icon="FolderOpen" IconColor="#ffffbf" Click="OpenNotebook" />
+                    <local:InputButton DockPanel.Dock="Left" Height="35" Width="35" Margin="0,0,10,0"  ToolTip="Otwórz obraz lub plik PDF"
                                        Icon="FileDocumentEdit" IconColor="Black" Click="OpenMediaInNotebook" />
                     <local:InputButton DockPanel.Dock="Left" Height="35" Width="35" Margin="0,0,10,0" 
-                                       Icon="FilePdfBox" IconColor="#e40b00" Click="SaveNotebookAsPdf"/>
+                                       Icon="FilePdfBox" IconColor="#e40b00" Click="SaveNotebookAsPdf" ToolTip="Eksportuj do PDF"/>
                 </DockPanel>
             </Grid>
             <!-- Pierwszy wiersz, tutaj ma byc pasek arkuszy
                  oraz rozwijane menu typu File, Settings itp. -->
-            <TabControl Grid.Row="1" VerticalAlignment="Bottom" Background="Gray" 
+            <TabControl Grid.Row="2" VerticalAlignment="Bottom" Background="Gray" 
                                 Name="Tabs" TabStripPlacement="Top" 
                                 ItemsSource="{Binding Notebooks, Mode=TwoWay}"
                                 SelectedItem="{Binding DisplayedNotebook, Mode=TwoWay}" Grid.ColumnSpan="2" Margin="0,0,0.334,0">
@@ -87,17 +101,17 @@
             <Grid Grid.Column="0" Background="DimGray">
                 <!-- (1) -->
                 <DockPanel LastChildFill="False">
-                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,20,0,0" 
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,20,0,0" ToolTip="Ołówek (D)"
                                        Icon="PencilOutline" IconColor="Black" Click="SelectPenClick" />
-                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" 
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" ToolTip="Gumka (E)"
                                        Icon="Eraser"  IconColor="Black" Click="SelectEraserClick"/>
-                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" 
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" ToolTip="Gumka pociągnięć (CTRL + E)"
                                        Icon="EraserVariant"  IconColor="Black" Click="SelectEraserStrokeClick"/>
-                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" 
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" ToolTip="Zaznaczenie (L)"
                                        Icon="Selection" IconColor="Black" Click="SelectSelectionClick" />
-                    <local:InputButton DockPanel.Dock="Bottom" Height="40" Width="40" Margin="0,5,0,20" 
+                    <local:InputButton DockPanel.Dock="Bottom" Height="40" Width="40" Margin="0,5,0,20" ToolTip="Dodaj stronę na koniec (CTRL + N)"
                                        Icon="Plus" IconColor="DimGray" IconBackground="Aquamarine" Click="ButtonAddPage_Click" />
-                    <local:InputButton DockPanel.Dock="Bottom" Height="40" Width="40" Margin="0,5,0,0" 
+                    <local:InputButton DockPanel.Dock="Bottom" Height="40" Width="40" Margin="0,5,0,0" ToolTip="Usuń ostatnią stronę (CTRL + SHIFT + N)"
                                        Icon="Minus" IconColor="DimGray" IconBackground="#F09F9F" Click="ButtonRemoveLastPage_Click" />
                     
                 </DockPanel>

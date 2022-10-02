@@ -12,6 +12,7 @@
                    Strokes="{Binding ElementName=inkPage, Path=DisplayedStrokes, Mode=TwoWay}" 
                    DefaultDrawingAttributes="{Binding  DrawingAttributes}"
                    EditingMode= "{Binding EditingMode}" 
+                   StrokeCollected="DrawingCanvas_StrokeCollected"
                    SelectionMoving="DrawingCanvas_SelectionMoving"
                    SelectionChanged="DrawingCanvas_SelectionChanged"
                    PreviewMouseLeftButtonDown="DrawingCanvas_PreviewMouseLeftButtonDown"/>
