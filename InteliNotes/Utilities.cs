@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Data;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +13,13 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace InteliNotes
 {
+    public static class Constants
+    {
+        public readonly static string MainPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"InteliNote");
+        public readonly static string OpenedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"InteliNote\opened.txt");
+        public readonly static string NotebooksPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"InteliNote\Notebooks");
+    }
+
     public static class InkCanvasExtender
     {
         public static void Move(this StrokeCollection strokes, double offsetX, double offsetY)
@@ -20,14 +28,12 @@ namespace InteliNotes
             matrix.Translate(offsetX, offsetY);
             strokes.Transform(matrix, false);
         }
-
         public static void Move(this Stroke stroke, double offsetX, double offsetY)
         {
             Matrix matrix = new Matrix();
             matrix.Translate(offsetX, offsetY);
             stroke.Transform(matrix, false);
         }
-
         public static void RemoveSelection(this InkCanvas canvas, StateMonitor monitor = null)
         {
             var elems = canvas.GetSelectedElements();
@@ -52,7 +58,6 @@ namespace InteliNotes
                 monitor.AddLastAction(new RemoveCombinedAction(canvas, strokes, monList));
             }
         }
-
         public static void AddUIElementAtPosition(this InkCanvas canvas, UIElement element, Point point)
         {
             canvas.AddUIElementAtPosition(element, point.X, point.Y);
@@ -77,7 +82,6 @@ namespace InteliNotes
             InkCanvas.SetTop(element, y);
             InkCanvas.SetLeft(element, x);
         }
-
         public static T DeepClone<T>(this T from)
         {
             if(!typeof(T).IsSerializable)
@@ -95,7 +99,6 @@ namespace InteliNotes
             }
         }
     }
-
     public class DropOutStack<T>
     {
         internal class Item
@@ -138,6 +141,9 @@ namespace InteliNotes
             else if(Count == MaxCount)
             {
                 Bottom = Bottom.next;
+                Bottom.prev.next = null;
+                Bottom.prev = null;
+
                 Top.next = item;
                 item.prev = Top;
                 Top = Top.next;
@@ -165,6 +171,64 @@ namespace InteliNotes
                 return item;
             }
         }
-    }
+        private Item Remove(Item current)
+        {
+            Item next = current.next;
+            Item prev = current.prev;
 
+            current.next = null;
+            current.prev = null;
+
+            if (current != Top)
+            {
+                next.prev = prev;
+            }
+            else
+            {
+                Top = prev;
+            }
+
+            if (current != Bottom)
+            {
+                prev.next = next;
+            }
+            else
+            {
+                Bottom = next;
+            }
+            Count--;
+            return next;
+        }
+        private Item RemoveOnCondition(Item current, Func<T, bool> remove)
+        {
+            Item next = current.next;
+            if (remove(current.Value) == true)
+            {
+                next = Remove(current);
+            }
+            return next;
+        }
+        public void RemoveMatching(Func<T, bool> remove)
+        {
+            Item current = Bottom;
+            while(current != null)
+            {
+                current = RemoveOnCondition(current, remove);
+            }
+        }
+    }
+    public class PageCountConverter: IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            string actualPage = values[0].ToString();
+            string totalPages = values[1].ToString();
+            return $"Strona {actualPage}/{totalPages}";
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
+        {
+            return null;
+        }
+    }
 }

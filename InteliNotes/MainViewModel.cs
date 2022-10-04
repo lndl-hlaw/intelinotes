@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -29,7 +30,9 @@ namespace InteliNotes
             set
             {
                 _dispNotebook = value;
-                RecomposePages();
+                if(_dispNotebook != null)
+                    RecomposePages();
+
                 OnPropertyChanged("DisplayedNotebook");
             }
         }
@@ -148,12 +151,8 @@ namespace InteliNotes
             DrawingAttributes.Width = 2;
             DrawingAttributes.Height = 2;
             EditingMode = InkCanvasEditingMode.Ink;
-
-            this.window = window;
-            DisplayedNotebook = new Notebook("Notes Pierwszy");
             Notebooks = new ObservableCollection<Notebook>();
-            Notebooks.Add(DisplayedNotebook);
-            Notebooks.Add(new Notebook("Notes Drugi"));
+            this.window = window;
         }
 
 

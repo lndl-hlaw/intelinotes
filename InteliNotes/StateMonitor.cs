@@ -14,6 +14,7 @@ namespace InteliNotes
         //(Point, InkCanvas) GetPreviousLocation();
         void Undo();
         void Redo();
+        bool CanBeDone(Func<object, bool> f);
     }
     public class AddStrokeAction: IStateAction
     {
@@ -41,6 +42,11 @@ namespace InteliNotes
             originalStroke = copiedStroke;
             copiedStroke = copiedStroke.Clone();
         }
+
+        public bool CanBeDone(Func<object, bool> f)
+        {
+            return f(canvas);
+        }
     }
     public class AddControlAction: IStateAction
     {
@@ -63,13 +69,19 @@ namespace InteliNotes
         {
             canvas.AddUIElementAtPosition(element, location);
         }
+        public bool CanBeDone(Func<object, bool> f)
+        {
+            return f(canvas);
+        }
     }
     public class AddCombinedAction: IStateAction
     {
+        InkCanvas canvas;
         RemoveCombinedAction remove;
         public AddCombinedAction(InkCanvas canvas, StrokeCollection strokes, List<(UIElement, Point)> elements)
         {
             remove = new RemoveCombinedAction(canvas, strokes, elements);
+            this.canvas = canvas;
         }
 
         public void Undo()
@@ -80,6 +92,10 @@ namespace InteliNotes
         public void Redo()
         {
             remove.Undo();
+        }
+        public bool CanBeDone(Func<object, bool> f)
+        {
+            return f(canvas);
         }
     }
     public class RemoveCombinedAction: IStateAction
@@ -137,13 +153,19 @@ namespace InteliNotes
                 }
             }
         }
+        public bool CanBeDone(Func<object, bool> f)
+        {
+            return f(canvas);
+        }
     }
     public class RemoveStrokeAction
     {
+        InkCanvas canvas;
         private AddStrokeAction reverted;
         public RemoveStrokeAction(InkCanvas canvas, Stroke stroke)
         {
             reverted = new AddStrokeAction(canvas, stroke);
+            this.canvas = canvas;
         }
 
         public void Undo()
@@ -155,13 +177,19 @@ namespace InteliNotes
         {
             reverted.Undo();
         }
+        public bool CanBeDone(Func<object, bool> f)
+        {
+            return f(canvas);
+        }
     }
     public class RemoveControlAction: IStateAction
     {
+        InkCanvas canvas;
         AddControlAction action;
         public RemoveControlAction(InkCanvas canvas, Point where, UIElement element)
         {
             action = new AddControlAction(canvas, where, element);
+            this.canvas = canvas;
         }
 
         public void Undo()
@@ -172,6 +200,10 @@ namespace InteliNotes
         public void Redo()
         {
             action.Undo();
+        }
+        public bool CanBeDone(Func<object, bool> f)
+        {
+            return f(canvas);
         }
     }
     public class MoveStrokesAndControlsAction: IStateAction
@@ -242,6 +274,17 @@ namespace InteliNotes
             }
             strokesOriginal.Move(pTo.X - pFrom.X, pTo.Y - pFrom.Y);
         }
+        public bool CanBeDone(Func<object, bool> f)
+        {
+            if(cFrom != cTo)
+            {
+                return f((cFrom, cTo));
+            }
+            else
+            {
+                return f(cFrom);
+            }
+        }
     }
     public class StateMonitor
     {
@@ -280,6 +323,12 @@ namespace InteliNotes
                 state.Redo();
                 prevActions.Push(state);
             }
+        }
+
+        public void RemoveMatching(Func<IStateAction, bool> f)
+        {
+            prevActions.RemoveMatching(f);
+            nextActions.RemoveMatching(f);
         }
     }
 }

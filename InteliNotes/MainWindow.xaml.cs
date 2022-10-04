@@ -33,13 +33,43 @@ namespace InteliNotes
     ///  
     public partial class MainWindow : Window
     {
-        MainViewModel model;
+        public MainViewModel model;
         public MainWindow()
         {
             InitializeComponent();
             Style = (Style)FindResource(typeof(Window));
             model = new MainViewModel(this);
             DataContext = model;
+            Closing += (e, args) => { 
+                SaveAllNotebookInfo(); 
+                foreach(var notebook in model.Notebooks)
+                {
+                    model.DisplayedNotebook = notebook;
+                    SaveDisplayedNotebook(notebook.NotebookPath);
+                }
+            };
+
+            using (var file = File.Open(Constants.OpenedFile, FileMode.Open, FileAccess.Read))
+            {
+                using (var reader = new StreamReader(file))
+                {
+                    string line = "";
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        if (!String.IsNullOrEmpty(line))
+                            OpenNotebook(line);
+                    }
+                    if (model.Notebooks.Count == 0)
+                    {
+                        int nr = 1;
+                        while (File.Exists($@"{Constants.NotebooksPath}\notebook_{nr}.inote")) nr++;
+                        string path = $@"{Constants.NotebooksPath}\notebook_{nr}.inote";
+                        model.DisplayedNotebook = new Notebook("Nowy notes", path);
+                        model.Notebooks.Add(model.DisplayedNotebook);
+                        SaveDisplayedNotebook(path);
+                    }
+                }
+            }
         }
 
         public void AddPage()
@@ -51,14 +81,38 @@ namespace InteliNotes
         {
             if (model.DisplayedNotebook.pages.Count > 1)
             {
-                if(model.DisplayedNotebook.lastClickedPage == model.DisplayedNotebook.pages.Last())
+                if (model.DisplayedNotebook.lastClickedPage == model.DisplayedNotebook.pages.Last())
                 {
                     model.DisplayedNotebook.lastClickedPage = model.DisplayedNotebook.pages[model.DisplayedNotebook.pages.Count - 2];
                     model.DisplayedNotebook.lastClickedPt = new Point(0, 0);
                 }
                 model.RemovePage(model.DisplayedNotebook.pages.Count - 1);
-                
+                RemoveActionStatesFromDeletedPages();
             }
+        }
+
+        public void RemoveActionStatesFromDeletedPages()
+        {
+            model.DisplayedNotebook.monitor.RemoveMatching((state) =>
+            {
+                return state.CanBeDone((source) =>
+                {
+                    if (source.GetType() == typeof(InkCanvas))
+                    {
+                        return model.DisplayedNotebook.pages.Where(p => p.DrawingCanvas == source).ToList().Count > 0;
+                    }
+                    else if (source.GetType() == typeof((InkCanvas, InkCanvas)))
+                    {
+                        (InkCanvas, InkCanvas) doubleSrc = ((InkCanvas, InkCanvas))source;
+                        return model.DisplayedNotebook.pages.Where(p => p.DrawingCanvas == doubleSrc.Item1).ToList().Count > 0
+                            && model.DisplayedNotebook.pages.Where(p => p.DrawingCanvas == doubleSrc.Item2).ToList().Count > 0;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }) == false;
+            });
         }
         private void ButtonAddPage_Click(object sender, RoutedEventArgs e)
         {
@@ -77,13 +131,17 @@ namespace InteliNotes
             {
                 int index = Tabs.Items.IndexOf(((System.Windows.Controls.Button)sender).DataContext as Notebook);
                 Tabs.SelectedItem = Tabs.Items[index == 0 ? index + 1 : index - 1];
-                model.Notebooks.Remove(((System.Windows.Controls.Button)sender).DataContext as Notebook);
+                Notebook nt = model.DisplayedNotebook;
+                model.DisplayedNotebook = ((System.Windows.Controls.Button)sender).DataContext as Notebook;
+                SaveDisplayedNotebook(model.DisplayedNotebook.NotebookPath);
+                model.Notebooks.Remove(model.DisplayedNotebook);
+                model.DisplayedNotebook = nt;
             }
         }
 
         public void FillPages()
         {
-            foreach(var page in model.DisplayedNotebook.pages)
+            foreach (var page in model.DisplayedNotebook.pages)
             {
                 ConcretePages.Children.Add(page);
             }
@@ -94,7 +152,7 @@ namespace InteliNotes
             ColorPicker.StandardColorPicker picker = sender as ColorPicker.StandardColorPicker;
             Color color = Color.FromArgb((byte)picker.Color.A, (byte)picker.Color.RGB_R,
                 (byte)picker.Color.RGB_G, (byte)picker.Color.RGB_B);
-            if(model.isHighlighter)
+            if (model.isHighlighter)
             {
                 color.A = 130;
             }
@@ -126,6 +184,7 @@ namespace InteliNotes
         {
             Color color = ((SolidColorBrush)(sender as PaintColorControl).IconColor).Color;
             model.isHighlighter = false;
+            model.EditingMode = InkCanvasEditingMode.Ink;
             model.DrawingAttributes.Width = model.penSize;
             model.DrawingAttributes.Height = model.penSize;
             model.PenColor = color;
@@ -156,7 +215,13 @@ namespace InteliNotes
 
         private void OpenNotebook(object sender, RoutedEventArgs args)
         {
-            OpenNotebook();
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.Filter = "InteliNote files | *.inote";
+            if (dialog.ShowDialog() == true)
+            {
+                OpenNotebook(dialog.FileName);
+                AddInfoAboutNotebook(dialog.FileName);
+            }
         }
         private void OpenMediaInNotebook(object sender, RoutedEventArgs args)
         {
@@ -272,14 +337,14 @@ namespace InteliNotes
             double ratio = width / height;
             double pageWidth = model.DisplayedNotebook.lastClickedPage.DrawingCanvas.ActualWidth;
             double pageHeight = model.DisplayedNotebook.lastClickedPage.DrawingCanvas.ActualHeight;
-            Point position = startPoint ? new Point(0,0) :model.DisplayedNotebook.lastClickedPt;
+            Point position = startPoint ? new Point(0, 0) : model.DisplayedNotebook.lastClickedPt;
 
             if (width + position.X > pageWidth)
             {
-                position.X = Math.Max(0, pageWidth - width);
+                position.X = Math.Max(10, pageWidth - width);
                 if (width > pageWidth)
                 {
-                    width = pageWidth;
+                    width = pageWidth - 20;
                     height = width / ratio;
                     bitmap = ResizeImage(bitmap, (int)width, (int)height);
                 }
@@ -287,10 +352,10 @@ namespace InteliNotes
 
             if (height + position.Y > pageHeight)
             {
-                position.Y = Math.Max(0, pageHeight - height);
+                position.Y = Math.Max(10, pageHeight - height);
                 if (height > pageHeight)
                 {
-                    height = pageHeight;
+                    height = pageHeight - 20;
                     width = height * ratio;
                     bitmap = ResizeImage(bitmap, (int)width, (int)height);
                 }
@@ -366,7 +431,7 @@ namespace InteliNotes
                             else if (Clipboard.ContainsImage())
                             {
                                 Image img = AddImageFromClipboard();
-                                if(img != null)
+                                if (img != null)
                                 {
                                     model.DisplayedNotebook.monitor.AddLastAction(new AddControlAction(
                                         model.DisplayedNotebook.lastClickedPage.DrawingCanvas, model.DisplayedNotebook.lastClickedPt, img));
@@ -439,7 +504,7 @@ namespace InteliNotes
                 Image image = selectedElements[0] as Image;
                 Clipboard.Clear();
                 Clipboard.SetDataObject(image);
-                if(cut)
+                if (cut)
                 {
                     page.Children.Remove(image);
                     model.DisplayedNotebook.monitor.AddLastAction(new RemoveControlAction(page, fromPt, image));
@@ -455,7 +520,7 @@ namespace InteliNotes
                 List<(UIElement, Point)> im = new List<(UIElement, Point)>();
                 foreach (var image in imgs)
                 {
-                    im.Add((image,new Point() { X = InkCanvas.GetLeft(image), Y = InkCanvas.GetTop(image) }));
+                    im.Add((image, new Point() { X = InkCanvas.GetLeft(image), Y = InkCanvas.GetTop(image) }));
                 }
                 clipboard = new CustomClipboard(selectionR, stroks, im);
                 if (cut)
@@ -470,123 +535,196 @@ namespace InteliNotes
 
         #region File Menu
 
-        private void MenuItemSave_Click(object sender, RoutedEventArgs e)
-        {
-            SaveNotebook();
-        }
-
-        private void SaveNotebook()
+        private void MenuItemSaveAs_Click(object sender, RoutedEventArgs e)
         {
             SaveFileDialog dialog = new SaveFileDialog();
             dialog.Filter = "InteliNote files | *.inote";
             if (dialog.ShowDialog() == true)
             {
-                using (var memoryStream = new MemoryStream())
+                SaveDisplayedNotebook(dialog.FileName);
+            }
+        }
+
+        private void MenuItemSave_Click(object sender, RoutedEventArgs e)
+        {
+            if (!String.IsNullOrEmpty(model.DisplayedNotebook.NotebookPath))
+            {
+                SaveDisplayedNotebook(model.DisplayedNotebook.NotebookPath);
+            }
+            else
+            {
+                SaveFileDialog dialog = new SaveFileDialog();
+                dialog.Filter = "InteliNote files | *.inote";
+                if (dialog.ShowDialog() == true)
                 {
-                    using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+                    SaveDisplayedNotebook(dialog.FileName);
+                }
+            }
+        }
+
+        public void SaveDisplayedNotebook(string path)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+                {
+                    for (int i = 0; i < model.DisplayedNotebook.pages.Count; ++i)
                     {
-                        for (int i = 0; i < model.DisplayedNotebook.pages.Count; ++i)
+                        InkCanvas canvas = model.DisplayedNotebook.pages[i].DrawingCanvas;
+
+                        var strokesFile = archive.CreateEntry($"page{i + 1}/strokes.bin");
+
+                        using (var entryStream = strokesFile.Open())
                         {
-                            InkCanvas canvas = model.DisplayedNotebook.pages[i].DrawingCanvas;
-
-                            var strokesFile = archive.CreateEntry($"page{i + 1}/strokes.bin");
-
-                            using (var entryStream = strokesFile.Open())
+                            using (MemoryStream ms = new MemoryStream())
                             {
-                                using (MemoryStream ms = new MemoryStream())
-                                {
-                                    canvas.Strokes.Save(ms);
-                                    ms.WriteTo(entryStream);
-                                }
+                                canvas.Strokes.Save(ms);
+                                ms.WriteTo(entryStream);
                             }
-                            foreach (var element in canvas.Children)
+                        }
+                        foreach (var element in canvas.Children)
+                        {
+                            if (element is Image)
                             {
-                                if (element is Image)
+                                Image image = element as Image;
+                                var encoder = new JpegBitmapEncoder();
+                                encoder.Frames.Add(BitmapFrame.Create((BitmapSource)image.Source));
+                                using (MemoryStream stream = new MemoryStream())
                                 {
-                                    Image image = element as Image;
-                                    var encoder = new JpegBitmapEncoder();
-                                    encoder.Frames.Add(BitmapFrame.Create((BitmapSource)image.Source));
-                                    using (MemoryStream stream = new MemoryStream())
+                                    encoder.Save(stream);
+                                    int x = (int)InkCanvas.GetLeft(image);
+                                    int y = (int)InkCanvas.GetTop(image);
+                                    var imageEntry = archive.CreateEntry($"page{i + 1}/image_{x}_{y}.jpg");
+                                    using (var entrStr = imageEntry.Open())
                                     {
-                                        encoder.Save(stream);
-                                        int x = (int)InkCanvas.GetLeft(image);
-                                        int y = (int)InkCanvas.GetTop(image);
-                                        var imageEntry = archive.CreateEntry($"page{i + 1}/image_{x}_{y}.jpg");
-                                        using (var entrStr = imageEntry.Open())
-                                        {
-                                            stream.WriteTo(entrStr);
-                                        }
+                                        stream.WriteTo(entrStr);
                                     }
                                 }
                             }
                         }
                     }
+                }
 
-                    using (var fileStream = new FileStream(dialog.FileName, FileMode.Create))
-                    {
-                        memoryStream.Seek(0, SeekOrigin.Begin);
-                        memoryStream.CopyTo(fileStream);
-                    }
+                using (var fileStream = new FileStream(path, FileMode.Create))
+                {
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    memoryStream.CopyTo(fileStream);
                 }
             }
         }
         private void MenuItemOpen_Click(object sender, RoutedEventArgs e)
         {
-            OpenNotebook();
-        }
-
-        private void OpenNotebook()
-        {
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.Filter = "InteliNote files | *.inote";
             if (dialog.ShowDialog() == true)
             {
-                Notebook notebook = new Notebook(System.IO.Path.GetFileName(dialog.FileName), false);
+                OpenNotebook(dialog.FileName);
+                AddInfoAboutNotebook(dialog.FileName);
+            }
+        }
 
-                using (var file = File.Open(dialog.FileName, FileMode.Open))
-                using (var archive = new ZipArchive(file, ZipArchiveMode.Read, true))
+        public void OpenNotebook(string path)
+        {
+            if(!File.Exists(path))
+            {
+                return;
+            }
+
+            Notebook notebook = new Notebook(System.IO.Path.GetFileName(path), path, false);
+
+            using (var file = File.Open(path, FileMode.Open))
+            using (var archive = new ZipArchive(file, ZipArchiveMode.Read, true))
+            {
+                foreach (var entry in archive.Entries)
                 {
-                    foreach (var entry in archive.Entries)
+                    using (var str = entry.Open())
                     {
-                        using (var str = entry.Open())
+                        using (var memory = new MemoryStream())
                         {
-                            using (var memory = new MemoryStream())
+                            str.CopyTo(memory);
+                            if (entry.Name.Contains("stroke"))
                             {
-                                str.CopyTo(memory);
-                                if (entry.Name.Contains("stroke"))
-                                {
-                                    PageControl page = notebook.AddPage();
-                                    memory.Position = 0;
-                                    page.DrawingCanvas.Strokes = new StrokeCollection(memory);
-                                }
-                                else if (entry.Name.Contains("image"))
-                                {
-                                    string name = entry.FullName;
-                                    int pageNr = int.Parse(name.Substring(4, name.IndexOf("/") - 4));
-                                    int firstNr = name.IndexOf("_") + 1;
-                                    int lastNr = name.LastIndexOf("_") + 1;
-                                    int left = int.Parse(name.Substring(firstNr, lastNr - firstNr - 1));
-                                    int top = int.Parse(name.Substring(lastNr, name.IndexOf(".jpg") - lastNr));
-                                    BitmapImage image = new BitmapImage();
-                                    image.BeginInit();
-                                    image.CacheOption = BitmapCacheOption.OnLoad;
-                                    memory.Position = 0;
-                                    image.StreamSource = memory;
-                                    image.EndInit();
-                                    Image img = new Image();
-                                    img.Source = image;
-                                    notebook.pages[pageNr - 1].DrawingCanvas.AddUIElementAtPosition(img, left, top);
-                                }
+                                PageControl page = notebook.AddPage();
+                                memory.Position = 0;
+                                page.DrawingCanvas.Strokes = new StrokeCollection(memory);
+                            }
+                            else if (entry.Name.Contains("image"))
+                            {
+                                string name = entry.FullName;
+                                int pageNr = int.Parse(name.Substring(4, name.IndexOf("/") - 4));
+                                int firstNr = name.IndexOf("_") + 1;
+                                int lastNr = name.LastIndexOf("_") + 1;
+                                int left = int.Parse(name.Substring(firstNr, lastNr - firstNr - 1));
+                                int top = int.Parse(name.Substring(lastNr, name.IndexOf(".jpg") - lastNr));
+                                BitmapImage image = new BitmapImage();
+                                image.BeginInit();
+                                image.CacheOption = BitmapCacheOption.OnLoad;
+                                memory.Position = 0;
+                                image.StreamSource = memory;
+                                image.EndInit();
+                                Image img = new Image();
+                                img.Source = image;
+                                notebook.pages[pageNr - 1].DrawingCanvas.AddUIElementAtPosition(img, left, top);
                             }
                         }
                     }
                 }
-                model.Notebooks.Add(notebook);
-                model.DisplayedNotebook = notebook;
+            }
+            model.Notebooks.Add(notebook);
+            model.DisplayedNotebook = notebook;
+        }
+        private void MenuItemNew_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.Filter = "InteliNote files | *.inote";
+            if (dialog.ShowDialog() == true)
+            {
+                CreateNewNotebook(dialog.FileName);
+                AddInfoAboutNotebook(dialog.FileName);
             }
         }
 
+        public void CreateNewNotebook(string path)
+        {
+            Notebook notebook = new Notebook("Nowy Notes", path);
+            model.Notebooks.Add(notebook);
+            model.DisplayedNotebook = notebook;
+            SaveDisplayedNotebook(path);
+        }
+
+        public void AddInfoAboutNotebook(string path)
+        {
+            using(var file = File.Open(Constants.OpenedFile, FileMode.Append, FileAccess.Write))
+            using(var write = new StreamWriter(file))
+            {
+                write.WriteLine(path);
+            }
+        }
+
+        public void SaveAllNotebookInfo()
+        {
+            using(var file = File.Open(Constants.OpenedFile, FileMode.Create, FileAccess.Write))
+            using (var write = new StreamWriter(file))
+            {
+                foreach(var nt in model.Notebooks)
+                {
+                    write.WriteLine(nt.NotebookPath);
+                }
+            }
+
+        }
+
+        public void RemoveInfoAboutNotebook(string path)
+        {
+
+        }
+
         #endregion
+
+        private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            model.DisplayedNotebook.ActualPage = 1 + (int)((double)model.DisplayedNotebook.pages.Count * (e.VerticalOffset - 1) / (sender as ScrollViewer).ScrollableHeight);
+        }
 
     }
 
@@ -600,7 +738,7 @@ namespace InteliNotes
         {
             get
             {
-                if(_lastPage == null && pages != null && pages.Count > 0 && pages[0] != null)
+                if (_lastPage == null && pages != null && pages.Count > 0 && pages[0] != null)
                 {
                     return pages[0];
                 }
@@ -611,7 +749,7 @@ namespace InteliNotes
             }
             set
             {
-                if(_lastPage != value)
+                if (_lastPage != value)
                 {
                     _lastPage = value;
                 }
@@ -622,14 +760,25 @@ namespace InteliNotes
 
         #endregion
 
-        private List<PageControl> _pages;
-        public List<PageControl> pages
+        private ObservableCollection<PageControl> _pages;
+        public ObservableCollection<PageControl> pages
         {
             get { return _pages; }
             set
             {
                 _pages = value;
                 OnPropertyChanged("pages");
+            }
+        }
+
+        private int _cnt = 1;
+        public int ActualPage
+        {
+            get { return _cnt; }
+            set
+            {
+                _cnt = value;
+                OnPropertyChanged("ActualPage");
             }
         }
 
@@ -644,14 +793,17 @@ namespace InteliNotes
             }
         }
 
+        public string NotebookPath { get; set; }
+
         public StateMonitor monitor;
-        public Notebook(string name, bool addpage = true)
+        public Notebook(string name, string path, bool addpage = true)
         {
             Name = name;
-            pages = new List<PageControl>();
+            pages = new ObservableCollection<PageControl>();
             monitor = new StateMonitor(50);
+            NotebookPath = path;
 
-            if(addpage)
+            if (addpage)
             {
                 PageControl page = new PageControl(this);
                 page.RequestBringIntoView += (s, e) => { e.Handled = true; };
@@ -666,7 +818,7 @@ namespace InteliNotes
             PageControl page = new PageControl(this);
             page.RequestBringIntoView += (s, e) => { e.Handled = true; };
             pages.Add(page);
-            if(lastClickedPage == null)
+            if (lastClickedPage == null)
             {
                 lastClickedPage = page;
                 lastClickedPt = new Point(0, 0);
