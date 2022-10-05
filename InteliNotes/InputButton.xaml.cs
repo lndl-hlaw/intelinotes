@@ -60,18 +60,6 @@ namespace InteliNotes
 
         public static readonly DependencyProperty IconProperty = DependencyProperty.Register("Icon", typeof(PackIconMaterialKind), typeof(InputButton));
 
-        //public string ToolTipText
-        //{
-        //    get { return (string)GetValue(ToolTipProperty); }
-        //    set
-        //    {
-        //        SetValue(ToolTipProperty, value);
-        //        OnPropertyChanged("ToolTipText");
-        //    }
-        //}
-
-        //public static readonly DependencyProperty ToolTipProperty = DependencyProperty.Register("ToolTipText", typeof(string), typeof(InputButton));
-
         public Brush IconColor
         {
             get { return (Brush)GetValue(ColorProperty); }

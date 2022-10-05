@@ -61,10 +61,17 @@ namespace InteliNotes
             notebook.lastClickedPt = e.GetPosition(this.DrawingCanvas);
             notebook.lastClickedPage = this;
         }
-
-        private void DrawingCanvas_SelectionChanged(object sender, EventArgs e)
+        private void DrawingCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-
+            if ((DataContext as MainViewModel).isTextInput)
+            {
+                Point pt = notebook.lastClickedPt;
+                TextField elem = new TextField(notebook);
+                elem.MinWidth = 100;
+                elem.MinHeight = 50;
+                DrawingCanvas.AddUIElementAtPosition(elem, pt);
+                notebook.lastTextField = elem;
+            }
         }
 
         private void DrawingCanvas_SelectionMoving(object sender, InkCanvasSelectionEditingEventArgs e)
@@ -133,5 +140,6 @@ namespace InteliNotes
         {
             notebook.monitor.AddLastAction(new AddStrokeAction(DrawingCanvas, e.Stroke));
         }
+
     }
 }

@@ -7,7 +7,9 @@
         xmlns:metro="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:local="clr-namespace:InteliNotes"
         mc:Ignorable="d" Name="mainWindow"
-        WindowState="Maximized" PreviewKeyDown="Window_PreviewKeyDown"
+        WindowState="Maximized" 
+        Icon="Resources\InteliNote_VioletBlue.ico"
+        PreviewKeyDown="Window_PreviewKeyDown"
         Title="InteliNote" Height="450" Width="800">
     <Window.Resources>
         <local:PageCountConverter x:Key="PageConverter"/>
@@ -109,6 +111,8 @@
                                        Icon="Eraser"  IconColor="Black" Click="SelectEraserClick"/>
                     <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" ToolTip="Gumka pociągnięć (CTRL + E)"
                                        Icon="EraserVariant"  IconColor="Black" Click="SelectEraserStrokeClick"/>
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" ToolTip="Tekst (T)"
+                                       Icon="FormTextarea"  IconColor="Black" Click="TextEditClick"/>
                     <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" ToolTip="Zaznaczenie (L)"
                                        Icon="Selection" IconColor="Black" Click="SelectSelectionClick" />
                     <local:InputButton DockPanel.Dock="Bottom" Height="40" Width="40" Margin="0,5,0,20" ToolTip="Dodaj stronę na koniec (CTRL + N)"

@@ -10,11 +10,11 @@
     <Grid>
         <InkCanvas Margin="10,20,10,0" Name="DrawingCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                    Strokes="{Binding ElementName=inkPage, Path=DisplayedStrokes, Mode=TwoWay}" 
-                   DefaultDrawingAttributes="{Binding  DrawingAttributes}"
-                   EditingMode= "{Binding EditingMode}" 
+                   DefaultDrawingAttributes="{Binding  DrawingAttributes, Mode=TwoWay}"
+                   EditingMode= "{Binding EditingMode, Mode=TwoWay}" 
                    StrokeCollected="DrawingCanvas_StrokeCollected"
                    SelectionMoving="DrawingCanvas_SelectionMoving"
-                   SelectionChanged="DrawingCanvas_SelectionChanged"
-                   PreviewMouseLeftButtonDown="DrawingCanvas_PreviewMouseLeftButtonDown"/>
+                   PreviewMouseLeftButtonDown="DrawingCanvas_PreviewMouseLeftButtonDown"
+                   MouseLeftButtonDown="DrawingCanvas_MouseLeftButtonDown"/>
     </Grid>
 </UserControl>

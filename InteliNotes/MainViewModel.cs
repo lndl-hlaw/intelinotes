@@ -51,6 +51,7 @@ namespace InteliNotes
 
         #region Drawing Attributes
         public bool isHighlighter = false;
+        public bool isTextInput = false;
 
         private InkCanvasEditingMode PrivMode;
         public InkCanvasEditingMode EditingMode

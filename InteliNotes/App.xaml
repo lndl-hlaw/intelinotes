@@ -9,8 +9,7 @@
                 <ResourceDictionary Source="Scrollbar.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <Style TargetType="{x:Type Window}">
-                <Setter Property="TextElement.FontFamily" Value="Resources/#Montserrat" />
-                <!-- Kursywa: #Montserrat Italic-->
+                <Setter Property="TextElement.FontFamily" Value="Resources/#Montserrat" /> <!-- Kursywa: #Montserrat Italic-->
                 <Setter Property="FontSize" Value="12"/>
             </Style>
         </ResourceDictionary>

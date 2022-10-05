@@ -11,7 +11,6 @@ namespace InteliNotes
 {
     public interface IStateAction
     {
-        //(Point, InkCanvas) GetPreviousLocation();
         void Undo();
         void Redo();
         bool CanBeDone(Func<object, bool> f);

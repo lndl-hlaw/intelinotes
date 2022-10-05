@@ -158,6 +158,12 @@ namespace InteliNotes
             }
             model.PenColor = color;
             model.DrawingAttributes.Color = color;
+            model.DrawingAttributes.Width = model.penSize;
+            model.DrawingAttributes.Height = model.penSize;
+            model.EditingMode = InkCanvasEditingMode.Ink;
+            model.isTextInput = false;
+            if (model.DisplayedNotebook.lastTextField != null)
+                model.DisplayedNotebook.lastTextField.DisableView();
         }
 
         private void SelectPenClick(object sender, RoutedEventArgs args)
@@ -166,29 +172,50 @@ namespace InteliNotes
             model.DrawingAttributes.Width = model.penSize;
             model.DrawingAttributes.Height = model.penSize;
             model.EditingMode = InkCanvasEditingMode.Ink;
+            if (model.DisplayedNotebook.lastTextField != null)
+                model.DisplayedNotebook.lastTextField.DisableView();
         }
         private void SelectEraserClick(object sender, RoutedEventArgs args)
         {
             model.EditingMode = InkCanvasEditingMode.EraseByPoint;
+            model.isTextInput = false;
+            if(model.DisplayedNotebook.lastTextField != null)
+                model.DisplayedNotebook.lastTextField.DisableView();
         }
         private void SelectEraserStrokeClick(object sender, RoutedEventArgs args)
         {
             model.EditingMode = InkCanvasEditingMode.EraseByStroke;
+            model.isTextInput = false;
+            if (model.DisplayedNotebook.lastTextField != null)
+                model.DisplayedNotebook.lastTextField.DisableView();
+        }
+        private void TextEditClick(object sender, RoutedEventArgs args)
+        {
+            model.isTextInput = true;
+            model.isHighlighter = false;
+            //Mouse.SetCursor(Cursors.IBeam);
+            model.EditingMode = InkCanvasEditingMode.None;
         }
         private void SelectSelectionClick(object sender, RoutedEventArgs args)
         {
             model.EditingMode = InkCanvasEditingMode.Select;
+            model.isTextInput = false;
+            if (model.DisplayedNotebook.lastTextField != null)
+                model.DisplayedNotebook.lastTextField.DisableView();
         }
 
         private void GetDefaultColor_Click(object sender, RoutedEventArgs args)
         {
             Color color = ((SolidColorBrush)(sender as PaintColorControl).IconColor).Color;
             model.isHighlighter = false;
+            model.isTextInput = false;
             model.EditingMode = InkCanvasEditingMode.Ink;
             model.DrawingAttributes.Width = model.penSize;
             model.DrawingAttributes.Height = model.penSize;
             model.PenColor = color;
             model.DrawingAttributes.Color = color;
+            if (model.DisplayedNotebook.lastTextField != null)
+                model.DisplayedNotebook.lastTextField.DisableView();
         }
 
         private void GetHighlighterColor_Click(object sender, RoutedEventArgs args)
@@ -196,10 +223,13 @@ namespace InteliNotes
             Color color = ((SolidColorBrush)(sender as InputButton).IconColor).Color;
             color.A = 130;
             model.isHighlighter = true;
+            model.isTextInput = false;
             model.PenColor = color;
             model.DrawingAttributes.Color = color;
             model.DrawingAttributes.Width = 4;
             model.DrawingAttributes.Height = 10;
+            if (model.DisplayedNotebook.lastTextField != null)
+                model.DisplayedNotebook.lastTextField.DisableView();
         }
 
         private void slValue_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -405,6 +435,11 @@ namespace InteliNotes
         private CustomClipboard clipboard;
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if(e.OriginalSource is TextBox)
+            {
+                return;
+            }
+
             if (Keyboard.IsKeyDown(Key.LeftCtrl))
             {
                 if (Keyboard.IsKeyDown(Key.LeftShift))
@@ -726,6 +761,21 @@ namespace InteliNotes
             model.DisplayedNotebook.ActualPage = 1 + (int)((double)model.DisplayedNotebook.pages.Count * (e.VerticalOffset - 1) / (sender as ScrollViewer).ScrollableHeight);
         }
 
+        //private void mainWindow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        //{
+        //    if (model != null && model.DisplayedNotebook != null && model.DisplayedNotebook.lastTextField != null)
+        //    {
+        //        TextField field = model.DisplayedNotebook.lastTextField;
+        //        if (String.IsNullOrEmpty(field.tekst.Text))
+        //        {
+        //            model.DisplayedNotebook.lastClickedPage.DrawingCanvas.Children.Remove(field);
+        //        }
+        //        else
+        //        {
+        //            field.TextGrid.Visibility = Visibility.Visible;
+        //        }
+        //    }
+        //}
     }
 
     public class Notebook : INotifyPropertyChanged
@@ -758,6 +808,29 @@ namespace InteliNotes
 
         public Point lastClickedPt;
 
+        #endregion
+
+        #region Last TextField
+        private TextField _textF;
+        public TextField lastTextField
+        {
+            get { return _textF; }
+            set
+            {
+                if(_textF != null && _textF != value)
+                {
+                    if (String.IsNullOrEmpty(_textF.tekst.Text))
+                    {
+                        lastClickedPage.DrawingCanvas.Children.Remove(_textF);
+                    }
+                    else
+                    {
+                        _textF.DisableView();
+                    }
+                }
+                _textF = value;
+            }
+        }
         #endregion
 
         private ObservableCollection<PageControl> _pages;

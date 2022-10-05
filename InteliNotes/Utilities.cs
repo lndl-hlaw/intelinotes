@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Data;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Globalization;
 
 namespace InteliNotes
 {
@@ -62,9 +64,11 @@ namespace InteliNotes
         {
             canvas.AddUIElementAtPosition(element, point.X, point.Y);
         }
+
         public static void AddUIElementAtPosition(this InkCanvas canvas, UIElement element, double x, double y)
         {
             canvas.Children.Add(element);
+
             if (element is Image)
             {
                 element.MouseLeftButtonDown += (sender, e) =>
@@ -78,10 +82,21 @@ namespace InteliNotes
                     }
                 };
             }
+            else if(element is TextField)
+            {
+                (element as TextField).tekst.MouseDoubleClick += (sender, e) =>
+                {
+                    if (canvas.GetSelectedElements().Contains(sender))
+                    {
+                        canvas.Select(null, null);
+                    }
+                };
+            }
 
             InkCanvas.SetTop(element, y);
             InkCanvas.SetLeft(element, x);
         }
+
         public static T DeepClone<T>(this T from)
         {
             if(!typeof(T).IsSerializable)
@@ -231,4 +246,18 @@ namespace InteliNotes
             return null;
         }
     }
+
+    public class BoolToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (bool)value == true ? Visibility.Hidden : Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
 }
