@@ -13,6 +13,7 @@
         Title="InteliNote" Height="450" Width="800">
     <Window.Resources>
         <local:PageCountConverter x:Key="PageConverter"/>
+        <local:BoolToVisibilityConverter x:Key="BoolVisibilityConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -66,7 +67,8 @@
                         <DockPanel Width="Auto">
                             <TextBlock Text="{Binding Name}" DockPanel.Dock="Left"/>
                             <Button Margin="5,0,0,0" DockPanel.Dock="Right" Click="RemoveTabClick"
-                                            BorderBrush="Transparent" BorderThickness="0">
+                                            BorderBrush="Transparent" BorderThickness="0"
+                                            Visibility="{Binding Path=IsSample, Converter={StaticResource BoolVisibilityConverter}}">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
                                         <ContentPresenter Content="{TemplateBinding Content}">
@@ -105,7 +107,9 @@
             <Grid Grid.Column="0" Background="DimGray">
                 <!-- (1) -->
                 <DockPanel LastChildFill="False">
-                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,20,0,0" ToolTip="Ołówek (D)"
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,20,0,0" ToolTip="Gumka (E)"
+                                       Icon="CursorDefaultOutline"  IconColor="Black" Click="SelectMouseClick"/>
+                    <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" ToolTip="Ołówek (D)"
                                        Icon="PencilOutline" IconColor="Black" Click="SelectPenClick" />
                     <local:InputButton DockPanel.Dock="Top" Height="35" Width="35" Margin="0,5,0,0" ToolTip="Gumka (E)"
                                        Icon="Eraser"  IconColor="Black" Click="SelectEraserClick"/>

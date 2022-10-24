@@ -7,7 +7,6 @@
              mc:Ignorable="d" Name="textField"
              d:DesignHeight="450" d:DesignWidth="800">
     <Control.Resources>
-        <local:BoolToVisibilityConverter x:Key="BoolVisibilityConverter"/>
         
         <SolidColorBrush x:Key="TextBox.Static.Border" Color="#FFABAdB3"/>
         <SolidColorBrush x:Key="TextBox.MouseOver.Border" Color="#FF7EB4EA"/>
@@ -104,7 +103,7 @@
         <TextBox Style="{StaticResource ResizableTextBoxStyle}" Name="tekst" 
                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"
                  PreviewMouseLeftButtonDown="tekst_PreviewMouseLeftButtonDown"
-                 TextWrapping="Wrap" AcceptsReturn="True">
+                 TextWrapping="Wrap" AcceptsReturn="True" Loaded="tekst_Loaded">
         </TextBox>
     </Grid>
 </UserControl>

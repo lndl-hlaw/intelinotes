@@ -40,12 +40,19 @@ namespace InteliNotes
             Style = (Style)FindResource(typeof(Window));
             model = new MainViewModel(this);
             DataContext = model;
+            model.DisplayedNotebook = new Notebook("Quick Notes", null);
+            model.DisplayedNotebook.IsSample = true;
+            model.Notebooks.Add(model.DisplayedNotebook);
+
             Closing += (e, args) => { 
                 SaveAllNotebookInfo(); 
                 foreach(var notebook in model.Notebooks)
                 {
-                    model.DisplayedNotebook = notebook;
-                    SaveDisplayedNotebook(notebook.NotebookPath);
+                    if(!notebook.IsSample)
+                    {
+                        model.DisplayedNotebook = notebook;
+                        SaveDisplayedNotebook(notebook.NotebookPath);
+                    }
                 }
             };
 
@@ -124,15 +131,15 @@ namespace InteliNotes
             RemoveLastPage();
         }
 
-
         private void RemoveTabClick(object sender, RoutedEventArgs args)
         {
             if (Tabs.Items.Count > 1)
             {
-                int index = Tabs.Items.IndexOf(((System.Windows.Controls.Button)sender).DataContext as Notebook);
+                Notebook notebook = ((System.Windows.Controls.Button)sender).DataContext as Notebook;
+                int index = Tabs.Items.IndexOf(notebook);
                 Tabs.SelectedItem = Tabs.Items[index == 0 ? index + 1 : index - 1];
                 Notebook nt = model.DisplayedNotebook;
-                model.DisplayedNotebook = ((System.Windows.Controls.Button)sender).DataContext as Notebook;
+                model.DisplayedNotebook = notebook;
                 SaveDisplayedNotebook(model.DisplayedNotebook.NotebookPath);
                 model.Notebooks.Remove(model.DisplayedNotebook);
                 model.DisplayedNotebook = nt;
@@ -166,6 +173,14 @@ namespace InteliNotes
                 model.DisplayedNotebook.lastTextField.DisableView();
         }
 
+        private void SelectMouseClick(object sender, RoutedEventArgs args)
+        {
+            model.EditingMode = InkCanvasEditingMode.None;
+            model.isHighlighter = false;
+            model.isTextInput = false;
+            if (model.DisplayedNotebook.lastTextField != null)
+                model.DisplayedNotebook.lastTextField.DisableView();
+        }
         private void SelectPenClick(object sender, RoutedEventArgs args)
         {
             model.isHighlighter = false;
@@ -193,7 +208,6 @@ namespace InteliNotes
         {
             model.isTextInput = true;
             model.isHighlighter = false;
-            //Mouse.SetCursor(Cursors.IBeam);
             model.EditingMode = InkCanvasEditingMode.None;
         }
         private void SelectSelectionClick(object sender, RoutedEventArgs args)
@@ -599,6 +613,11 @@ namespace InteliNotes
 
         public void SaveDisplayedNotebook(string path)
         {
+            if(String.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
             using (var memoryStream = new MemoryStream())
             {
                 using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
@@ -633,6 +652,32 @@ namespace InteliNotes
                                     using (var entrStr = imageEntry.Open())
                                     {
                                         stream.WriteTo(entrStr);
+                                    }
+                                }
+                            }
+                            else if(element is TextField)
+                            {
+                                TextField txt = element as TextField;
+                                string text = txt.tekst.Text;
+                                if(String.IsNullOrEmpty(text))
+                                {
+                                    continue;
+                                }
+
+                                using (MemoryStream stream = new MemoryStream())
+                                {
+                                    using(BinaryWriter bin = new BinaryWriter(stream))
+                                    {
+                                        bin.Write(Encoding.UTF8.GetBytes(text));
+
+                                        int x = (int)InkCanvas.GetLeft(txt);
+                                        int y = (int)InkCanvas.GetTop(txt);
+
+                                        var textEntry = archive.CreateEntry($"page{i + 1}/text_{x}_{y}.bin");
+                                        using (var entrStr = textEntry.Open())
+                                        {
+                                            stream.WriteTo(entrStr);
+                                        }
                                     }
                                 }
                             }
@@ -701,6 +746,20 @@ namespace InteliNotes
                                 img.Source = image;
                                 notebook.pages[pageNr - 1].DrawingCanvas.AddUIElementAtPosition(img, left, top);
                             }
+                            else if(entry.Name.Contains("text"))
+                            {
+                                string name = entry.FullName;
+                                int pageNr = int.Parse(name.Substring(4, name.IndexOf("/") - 4));
+                                int firstNr = name.IndexOf("_") + 1;
+                                int lastNr = name.LastIndexOf("_") + 1;
+                                int left = int.Parse(name.Substring(firstNr, lastNr - firstNr - 1));
+                                int top = int.Parse(name.Substring(lastNr, name.IndexOf(".bin") - lastNr));
+                                string textContent = Encoding.UTF8.GetString(memory.ToArray());
+                                TextField field = new TextField(notebook, false);
+                                field.tekst.Text = textContent;
+                                field.DisableView();
+                                notebook.pages[pageNr - 1].DrawingCanvas.AddUIElementAtPosition(field, left, top);
+                            }
                         }
                     }
                 }
@@ -743,7 +802,10 @@ namespace InteliNotes
             {
                 foreach(var nt in model.Notebooks)
                 {
-                    write.WriteLine(nt.NotebookPath);
+                    if (nt.IsSample)
+                    {
+                        write.WriteLine(nt.NotebookPath);
+                    }
                 }
             }
 
@@ -833,6 +895,21 @@ namespace InteliNotes
         }
         #endregion
 
+        #region Is Sample
+
+        private bool smple;
+        public bool IsSample
+        {
+            get { return smple; }
+            set
+            {
+                smple = value;
+                OnPropertyChanged("IsSample");
+            }
+        }
+
+        #endregion
+
         private ObservableCollection<PageControl> _pages;
         public ObservableCollection<PageControl> pages
         {
@@ -875,6 +952,7 @@ namespace InteliNotes
             pages = new ObservableCollection<PageControl>();
             monitor = new StateMonitor(50);
             NotebookPath = path;
+            IsSample = false;
 
             if (addpage)
             {

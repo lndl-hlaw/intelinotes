@@ -134,7 +134,7 @@ namespace InteliNotes
                     InkCanvas.SetTop(elem.Item1, elem.Item2.Y);
                 }
             }
-            canvas.Select(copiedStrokes, els);
+            //canvas.Select(copiedStrokes, els);
         }
 
         public void Redo()
@@ -247,6 +247,7 @@ namespace InteliNotes
                 InkCanvas.SetLeft(elem, pFrom.X);
                 InkCanvas.SetTop(elem, pFrom.Y);
             }
+
             strokesOriginal.Move(pFrom.X - pTo.X, pFrom.Y - pTo.Y);
         }
 

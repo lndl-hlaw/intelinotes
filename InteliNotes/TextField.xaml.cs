@@ -22,17 +22,28 @@ namespace InteliNotes
     public partial class TextField : UserControl
     {
         Notebook notebook;
-        public TextField(Notebook notebook)
+        bool unsetVisibility = false;
+        public TextField(Notebook notebook, bool visibility = true)
         {
             this.notebook = notebook;
+            unsetVisibility = !visibility;
             InitializeComponent();
         }
+
+
         private void tekst_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             notebook.lastTextField = this;
             tekst.BorderThickness = new Thickness(1);
             SetGrid(Visibility.Visible);
             e.Handled = false;
+        }
+        private void tekst_Loaded(object sender, RoutedEventArgs e)
+        {
+            if(unsetVisibility)
+            {
+                DisableView();
+            }
         }
 
         public void DisableView()
@@ -100,6 +111,7 @@ namespace InteliNotes
             {
             }
         }
+
 
         private void resizeGripGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
